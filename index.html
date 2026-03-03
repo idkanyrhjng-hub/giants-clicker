@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>New York Giants Clicker</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(to bottom,#0B1C3D,#1C3F75);
+color:white;
+overflow-x:hidden;
+text-align:center;
+}
+
+/* Stats Box */
+.stats-box{
+position:fixed;
+left:5px;
+top:100px;
+border:2px solid white;
+padding:20px;
+width:220px;
+border-radius:10px;
+text-align:left;
+}
+
+/* Top Buttons */
+.top-buttons{
+position:absolute;
+top:20px;
+width:100%;
+}
+
+.btn{
+padding:12px 25px;
+background:#B11226;
+border:none;
+color:white;
+border-radius:10px;
+cursor:pointer;
+margin:0 10px;
+transition:0.1s;
+}
+
+.btn:active{
+transform:scale(0.9);
+}
+
+/* Panels */
+.panel{
+position:absolute;
+top:70px;
+left:50%;
+transform:translateX(-50%);
+width:350px;
+max-height:400px;
+overflow-y:auto;
+background:rgba(0,0,0,0.9);
+padding:15px;
+border-radius:10px;
+display:none;
+text-align:left;
+}
+
+.upgrade{
+background:#1C3F75;
+padding:8px;
+margin:6px 0;
+border-radius:6px;
+cursor:pointer;
+transition:0.1s;
+}
+
+.upgrade:active{
+transform:scale(0.95);
+}
+
+.upgrade.locked{
+background:#444;
+opacity:0.6;
+cursor:not-allowed;
+}
+
+/* NY */
+.center{
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.ny{
+font-size:180px;
+font-weight:900;
+color:#B11226;
+text-shadow:6px 6px white,-6px -6px white;
+cursor:pointer;
+transition:0.1s;
+}
+
+.ny:active{
+transform:scale(0.85);
+}
+
+/* Achievement + Error */
+.popup{
+position:fixed;
+bottom:20px;
+right:20px;
+background:rgba(0,0,0,0.4);
+padding:15px 20px;
+border-radius:10px;
+animation:fade 4s forwards;
+}
+
+.error{
+background:rgba(150,0,0,0.7);
+}
+
+@keyframes fade{
+0%{opacity:0;}
+10%{opacity:1;}
+90%{opacity:1;}
+100%{opacity:0;}
+}
+
+/* Footballs */
+.bg-football{
+position:fixed;
+top:-60px;
+font-size:30px;
+opacity:0.5;
+animation:fall linear infinite;
+}
+
+.event-football{
+position:fixed;
+top:-100px;
+font-size:90px;
+cursor:pointer;
+animation:fall linear forwards;
+}
+
+@keyframes fall{
+to{ transform:translateY(110vh) rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<div class="stats-box">
+<p><strong>Total Clicks</strong></p>
+<p id="clicks">0</p>
+<hr>
+<p>Per Click: <span id="perClick">1</span></p>
+<p>Auto/sec: <span id="autoClick">0</span></p>
+<p>Football Reward: <span id="footballReward">100</span></p>
+</div>
+
+<div class="top-buttons">
+<button class="btn" onclick="toggleShop()">SHOP</button>
+<button class="btn" onclick="toggleSettings()">SETTINGS</button>
+</div>
+
+<div class="panel" id="shop"></div>
+<div class="panel" id="settings"></div>
+
+<div class="center">
+<div class="ny" onclick="clickNY()">NY</div>
+</div>
+
+<script>
+let clicks=0;
+let perClick=1;
+let autoClick=0;
+let footballReward=100;
+let footballGolden=false;
+let giantsUsed=false;
+
+/* 50 LEVELS + FOOTBALL UPGRADES */
+let upgrades=[];
+
+/* Main 50 Levels */
+for(let i=1;i<=50;i++){
+upgrades.push({
+name:"Giants Level "+i,
+cost:Math.floor(100*Math.pow(1.7,i)),
+boost:Math.floor(5*Math.pow(1.4,i)),
+auto: i%5===0 ? Math.floor(Math.pow(2,i/5)) : 0,
+unlocked:false
+});
+}
+
+/* Keep your special upgrades */
+upgrades.push({name:"Football Power",cost:100000,type:"football",unlocked:false});
+upgrades.push({name:"Golden Football",cost:500000,type:"gold",unlocked:false});
+
+/* Format */
+function format(n){
+if(n>=1e9)return(n/1e9).toFixed(1)+"B";
+if(n>=1e6)return(n/1e6).toFixed(1)+"M";
+if(n>=1e3)return(n/1e3).toFixed(1)+"K";
+return Math.floor(n);
+}
+
+/* Update */
+function update(){
+document.getElementById("clicks").innerText=format(clicks);
+document.getElementById("perClick").innerText=format(perClick);
+document.getElementById("autoClick").innerText=format(autoClick);
+document.getElementById("footballReward").innerText=format(footballGolden?footballReward*3:footballReward);
+
+upgrades.forEach(u=>{
+if(clicks>=u.cost && !u.unlocked){
+u.unlocked=true;
+showPopup("🏆 Unlocked "+u.name,false);
+}
+});
+
+renderShop();
+}
+
+/* NY click */
+function clickNY(){
+clicks+=perClick;
+update();
+}
+
+/* Auto click */
+setInterval(()=>{clicks+=autoClick;update();},1000);
+
+/* Shop */
+function toggleShop(){
+let shop=document.getElementById("shop");
+let settings=document.getElementById("settings");
+settings.style.display="none";
+shop.style.display=shop.style.display=="block"?"none":"block";
+renderShop();
+}
+
+function renderShop(){
+let shop=document.getElementById("shop");
+shop.innerHTML="";
+upgrades.forEach(u=>{
+let div=document.createElement("div");
+div.className="upgrade";
+if(!u.unlocked){
+div.classList.add("locked");
+div.innerHTML="🔒 "+u.name+"<br>Unlock at "+format(u.cost);
+}else{
+div.innerHTML=u.name+"<br>Cost: "+format(u.cost);
+div.onclick=()=>{
+if(clicks>=u.cost){
+clicks-=u.cost;
+if(u.boost)perClick+=u.boost;
+if(u.auto)autoClick+=u.auto;
+if(u.type=="football")footballReward+=200;
+if(u.type=="gold")footballGolden=true;
+update();
+}
+};
+}
+shop.appendChild(div);
+});
+}
+
+/* Settings */
+function toggleSettings(){
+let shop=document.getElementById("shop");
+let settings=document.getElementById("settings");
+shop.style.display="none";
+settings.style.display=settings.style.display=="block"?"none":"block";
+
+settings.innerHTML=`
+<button onclick="saveGame()">Save Game</button><br><br>
+<input id="codeInput" placeholder="Enter Code">
+<button onclick="redeemCode()">Redeem</button>
+`;
+}
+
+/* Codes */
+function redeemCode(){
+let code=document.getElementById("codeInput").value.toUpperCase();
+if(code=="GIANTS"){
+if(giantsUsed){
+showPopup("❌ Already claimed!",true);
+return;
+}
+clicks+=100000;
+giantsUsed=true;
+showPopup("100K Added!",false);
+}
+else if(code=="FOOTBALL"){
+clicks+=50000;
+showPopup("50K Added!",false);
+}
+else{
+showPopup("❌ Invalid Code",true);
+}
+update();
+}
+
+/* Save */
+function saveGame(){
+localStorage.setItem("giantsSave",JSON.stringify({
+clicks,perClick,autoClick,footballReward,footballGolden,giantsUsed
+}));
+showPopup("Game Saved!",false);
+}
+
+/* Popups */
+function showPopup(text,isError){
+let div=document.createElement("div");
+div.className="popup";
+if(isError)div.classList.add("error");
+div.innerText=text;
+document.body.appendChild(div);
+setTimeout(()=>div.remove(),4000);
+}
+
+/* Background footballs */
+setInterval(()=>{
+let f=document.createElement("div");
+f.className="bg-football";
+f.innerText="🏈";
+f.style.left=Math.random()*100+"vw";
+f.style.animationDuration=(3+Math.random()*5)+"s";
+document.body.appendChild(f);
+setTimeout(()=>f.remove(),8000);
+},500);
+
+/* Event football */
+setInterval(()=>{
+if(Math.random()<0.6){
+let f=document.createElement("div");
+f.className="event-football";
+f.innerText=footballGolden?"🏈✨":"🏈";
+f.style.left=Math.random()*90+"vw";
+f.style.animationDuration="6s";
+f.onclick=()=>{
+clicks+=footballGolden?footballReward*3:footballReward;
+f.remove();
+update();
+};
+document.body.appendChild(f);
+setTimeout(()=>f.remove(),7000);
+}
+},60000);
+
+update();
+</script>
+
+</body>
+</html>
